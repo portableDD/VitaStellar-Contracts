@@ -2838,3 +2838,67 @@ mod health_check_tests {
         assert_eq!(status, symbol_short!("PAUSED"));
     }
 }
+
+// Issue #12: Tests for panic removal in legacy functions
+#[cfg(test)]
+mod panic_removal_tests {
+    use super::*;
+    use soroban_sdk::testutils::{Address as _, Ledger as _};
+
+    fn create_contract() -> (Env, IdentityRegistryContractClient<'static>, Address) {
+        let env = Env::default();
+        env.mock_all_auths();
+        env.ledger().set_timestamp(10_000);
+        let rbac_id = env.register_contract(None, MockRbac);
+        let rbac_client = MockRbacClient::new(&env, &rbac_id);
+        let contract_id = env.register_contract(None, IdentityRegistryContract);
+        let client = IdentityRegistryContractClient::new(&env, &contract_id);
+        let owner = Address::generate(&env);
+        let _ = rbac_client.assign_role(&owner, &RbacRole::Admin);
+        let network_id = String::from_str(&env, "testnet");
+        client.initialize(&owner, &network_id, &rbac_id);
+        (env, client, owner)
+    }
+
+    #[test]
+    fn test_register_identity_hash_returns_ok() {
+        let (env, client, _owner) = create_contract();
+        let subject = Address::generate(&env);
+        let hash = BytesN::from_array(&env, &[1u8; 32]);
+        let meta = String::from_str(&env, "Valid metadata");
+        let result = client.register_identity_hash(&hash, &subject, &meta);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_attest_non_verifier_returns_error() {
+        let (env, client, _owner) = create_contract();
+        let non_verifier = Address::generate(&env);
+        let subject = Address::generate(&env);
+        let claim_hash = BytesN::from_array(&env, &[2u8; 32]);
+        let result = client.try_attest(&non_verifier, &subject, &claim_hash);
+        assert_eq!(result, Err(Ok(Error::NotVerifier)));
+    }
+
+    #[test]
+    fn test_revoke_attestation_non_existent_returns_error() {
+        let (env, client, _owner) = create_contract();
+        let verifier = Address::generate(&env);
+        let subject = Address::generate(&env);
+        let claim_hash = BytesN::from_array(&env, &[3u8; 32]);
+        client.add_verifier(&verifier);
+        let result = client.try_revoke_attestation(&verifier, &subject, &claim_hash);
+        assert_eq!(result, Err(Ok(Error::AttestationNotFound)));
+    }
+
+    #[test]
+    fn test_attest_as_verifier_succeeds() {
+        let (env, client, _owner) = create_contract();
+        let verifier = Address::generate(&env);
+        let subject = Address::generate(&env);
+        let claim_hash = BytesN::from_array(&env, &[4u8; 32]);
+        client.add_verifier(&verifier);
+        let result = client.try_attest(&verifier, &subject, &claim_hash);
+        assert!(result.is_ok());
+    }
+}
