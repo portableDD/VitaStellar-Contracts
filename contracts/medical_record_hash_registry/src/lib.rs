@@ -35,6 +35,7 @@ pub struct PatientRecords {
 pub enum DataKey {
     Initialized,
     Admin,
+    Paused,
     RecordStorage(Address), // patient_id -> PatientRecords
     HashIndex(BytesN<32>),  // record_hash -> patient_id
 }
@@ -64,6 +65,7 @@ impl MedicalRecordHashRegistry {
     /// Store a medical record hash for a patient
     /// Returns an error if:
     /// - Contract is not initialized
+    /// - Contract is paused
     /// - The same hash already exists for this patient (duplicate detection)
     pub fn store_record(
         env: Env,
@@ -73,6 +75,7 @@ impl MedicalRecordHashRegistry {
     ) -> Result<(), Error> {
         caller.require_auth();
         Self::require_initialized(&env)?;
+        Self::require_not_paused(&env)?;
 
         let timestamp = env.ledger().timestamp();
 
@@ -184,11 +187,85 @@ impl MedicalRecordHashRegistry {
             .ok_or(Error::NotInitialized)
     }
 
+    // ==================== Pause/Unpause ====================
+
+    /// Returns true if the contract is currently paused.
+    pub fn is_paused(env: Env) -> bool {
+        env.storage().instance().get(&DataKey::Paused).unwrap_or(false)
+    }
+
+    /// Pause the contract. Only callable by the admin.
+    pub fn pause(env: Env, caller: Address) -> Result<bool, Error> {
+        caller.require_auth();
+        Self::require_admin(&env, &caller)?;
+        env.storage().instance().set(&DataKey::Paused, &true);
+        events::publish_paused(&env, &caller, env.ledger().timestamp());
+        Ok(true)
+    }
+
+    /// Unpause the contract. Only callable by the admin.
+    pub fn unpause(env: Env, caller: Address) -> Result<bool, Error> {
+        caller.require_auth();
+        Self::require_admin(&env, &caller)?;
+        env.storage().instance().set(&DataKey::Paused, &false);
+        events::publish_unpaused(&env, &caller, env.ledger().timestamp());
+        Ok(true)
+    }
+
+    // ==================== Health Check ====================
+
+    /// Standardized health check returning (status, version, timestamp).
+    pub fn health_check(env: Env) -> (soroban_sdk::Symbol, u32, u64) {
+        let initialized = env.storage().instance().has(&DataKey::Initialized);
+        let paused: bool = env
+            .storage()
+            .instance()
+            .get(&DataKey::Paused)
+            .unwrap_or(false);
+
+        let status = if !initialized {
+            soroban_sdk::symbol_short!("NOT_INIT")
+        } else if paused {
+            soroban_sdk::symbol_short!("PAUSED")
+        } else {
+            soroban_sdk::symbol_short!("OK")
+        };
+
+        let version: u32 = 1;
+        let timestamp = env.ledger().timestamp();
+        (status, version, timestamp)
+    }
+
     // ==================== Internal Helpers ====================
 
     fn require_initialized(env: &Env) -> Result<(), Error> {
         if !env.storage().instance().has(&DataKey::Initialized) {
             return Err(Error::NotInitialized);
+        }
+        Ok(())
+    }
+
+    fn require_admin(env: &Env, caller: &Address) -> Result<(), Error> {
+        let admin: Address = env
+            .storage()
+            .instance()
+            .get(&DataKey::Admin)
+            .ok_or(Error::NotInitialized)?;
+        if caller == &admin {
+            Ok(())
+        } else {
+            Err(Error::Unauthorized)
+        }
+    }
+
+    fn require_not_paused(env: &Env) -> Result<(), Error> {
+        if env
+            .storage()
+            .instance()
+            .get(&DataKey::Paused)
+            .unwrap_or(false)
+        {
+            return Err(Error::ContractPaused);
         }
         Ok(())
     }

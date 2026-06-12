@@ -35,3 +35,17 @@ pub fn publish_duplicate_rejected(env: &Env, patient_id: &Address, record_hash: 
         (patient_id, record_hash.clone()),
     );
 }
+
+pub fn publish_paused(env: &Env, caller: &Address, timestamp: u64) {
+    env.events().publish(
+        (symbol_short!("MEDREG"), symbol_short!("PAUSED")),
+        (caller.clone(), timestamp),
+    );
+}
+
+pub fn publish_unpaused(env: &Env, caller: &Address, timestamp: u64) {
+    env.events().publish(
+        (symbol_short!("MEDREG"), symbol_short!("UNPAUS")),
+        (caller.clone(), timestamp),
+    );
+}
