@@ -375,7 +375,9 @@ fn register_base_proof(
 ) {
     let admin = Address::generate(env);
     let circuit_id = String::from_str(env, "base_circuit");
-    client.register_circuit(&admin, &circuit_id, &ZKPType::SNARK, &1, &1, &10, &128, vk, pk, &false);
+    client.register_circuit(
+        &admin, &circuit_id, &ZKPType::SNARK, &1, &1, &10, &128, vk, pk, &false,
+    );
     let submitter = Address::generate(env);
     let inputs = vec![env, Bytes::from_slice(env, b"base_input")];
     let pd = Bytes::from_slice(env, b"0123456789abcdef0123456789abcdef");
@@ -651,9 +653,26 @@ fn test_recursive_commitment_different_depths_produce_different_hashes() {
         verification_gas: 1_000,
         created_at: 0,
     };
-    let rp1 = RecursiveProof { base_proof_id: base_id.clone(), recursive_proof: inner.clone(), aggregated_vk: Bytes::new(&env), composition_depth: 1, total_gas: 0, composed_at: 0 };
-    let rp3 = RecursiveProof { base_proof_id: base_id.clone(), recursive_proof: inner.clone(), aggregated_vk: Bytes::new(&env), composition_depth: 3, total_gas: 0, composed_at: 0 };
-    assert_ne!(recursive_commitment(&env, &rp1).to_array(), recursive_commitment(&env, &rp3).to_array());
+    let rp1 = RecursiveProof {
+        base_proof_id: base_id.clone(),
+        recursive_proof: inner.clone(),
+        aggregated_vk: Bytes::new(&env),
+        composition_depth: 1,
+        total_gas: 0,
+        composed_at: 0,
+    };
+    let rp3 = RecursiveProof {
+        base_proof_id: base_id.clone(),
+        recursive_proof: inner.clone(),
+        aggregated_vk: Bytes::new(&env),
+        composition_depth: 3,
+        total_gas: 0,
+        composed_at: 0,
+    };
+    assert_ne!(
+        recursive_commitment(&env, &rp1).to_array(),
+        recursive_commitment(&env, &rp3).to_array()
+    );
 }
 
 #[test]
@@ -672,9 +691,26 @@ fn test_recursive_commitment_different_base_ids_produce_different_hashes() {
         verification_gas: 1_000,
         created_at: 0,
     };
-    let rp_a = RecursiveProof { base_proof_id: base_a, recursive_proof: inner.clone(), aggregated_vk: Bytes::new(&env), composition_depth: 1, total_gas: 0, composed_at: 0 };
-    let rp_b = RecursiveProof { base_proof_id: base_b, recursive_proof: inner.clone(), aggregated_vk: Bytes::new(&env), composition_depth: 1, total_gas: 0, composed_at: 0 };
-    assert_ne!(recursive_commitment(&env, &rp_a).to_array(), recursive_commitment(&env, &rp_b).to_array());
+    let rp_a = RecursiveProof {
+        base_proof_id: base_a,
+        recursive_proof: inner.clone(),
+        aggregated_vk: Bytes::new(&env),
+        composition_depth: 1,
+        total_gas: 0,
+        composed_at: 0,
+    };
+    let rp_b = RecursiveProof {
+        base_proof_id: base_b,
+        recursive_proof: inner.clone(),
+        aggregated_vk: Bytes::new(&env),
+        composition_depth: 1,
+        total_gas: 0,
+        composed_at: 0,
+    };
+    assert_ne!(
+        recursive_commitment(&env, &rp_a).to_array(),
+        recursive_commitment(&env, &rp_b).to_array()
+    );
 }
 
 #[test]
@@ -692,8 +728,18 @@ fn test_recursive_commitment_deterministic() {
         verification_gas: 1_000,
         created_at: 0,
     };
-    let rp = RecursiveProof { base_proof_id: base_id, recursive_proof: inner, aggregated_vk: Bytes::new(&env), composition_depth: 2, total_gas: 0, composed_at: 0 };
-    assert_eq!(recursive_commitment(&env, &rp).to_array(), recursive_commitment(&env, &rp).to_array());
+    let rp = RecursiveProof {
+        base_proof_id: base_id,
+        recursive_proof: inner,
+        aggregated_vk: Bytes::new(&env),
+        composition_depth: 2,
+        total_gas: 0,
+        composed_at: 0,
+    };
+    assert_eq!(
+        recursive_commitment(&env, &rp).to_array(),
+        recursive_commitment(&env, &rp).to_array()
+    );
 }
 
 #[test]
