@@ -458,7 +458,12 @@ fn test_recursive_proof_depth_1_passes() {
     let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
     let composer = Address::generate(&env);
     client.create_recursive_proof(
-        &composer, &base_id, &rp.recursive_proof, &agg_vk, &1, &5_000,
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &agg_vk,
+        &1,
+        &5_000,
     );
 }
 
@@ -472,7 +477,12 @@ fn test_recursive_proof_depth_3_passes() {
     let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 3);
     let composer = Address::generate(&env);
     client.create_recursive_proof(
-        &composer, &base_id, &rp.recursive_proof, &agg_vk, &3, &5_000,
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &agg_vk,
+        &3,
+        &5_000,
     );
 }
 
@@ -486,7 +496,12 @@ fn test_recursive_proof_max_depth_10_passes() {
     let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 10);
     let composer = Address::generate(&env);
     client.create_recursive_proof(
-        &composer, &base_id, &rp.recursive_proof, &agg_vk, &10, &5_000,
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &agg_vk,
+        &10,
+        &5_000,
     );
 }
 
@@ -499,7 +514,12 @@ fn test_recursive_proof_depth_0_rejected() {
     let (rp, agg_vk) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
     let composer = Address::generate(&env);
     let r = client.try_create_recursive_proof(
-        &composer, &base_id, &rp.recursive_proof, &agg_vk, &0, &5_000,
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &agg_vk,
+        &0,
+        &5_000,
     );
     assert_eq!(r, Err(Ok(Error::RecursiveDepthExceeded)));
 }
@@ -513,7 +533,12 @@ fn test_recursive_proof_depth_11_rejected() {
     let agg_vk = Bytes::from_slice(&env, &[0u8; 32]);
     let composer = Address::generate(&env);
     let r = client.try_create_recursive_proof(
-        &composer, &base_id, &rp.recursive_proof, &agg_vk, &11, &5_000,
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &agg_vk,
+        &11,
+        &5_000,
     );
     assert_eq!(r, Err(Ok(Error::RecursiveDepthExceeded)));
 }
@@ -526,7 +551,12 @@ fn test_recursive_proof_empty_aggregated_vk_rejected() {
     let (rp, _) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
     let composer = Address::generate(&env);
     let r = client.try_create_recursive_proof(
-        &composer, &base_id, &rp.recursive_proof, &Bytes::new(&env), &1, &5_000,
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &Bytes::new(&env),
+        &1,
+        &5_000,
     );
     assert_eq!(r, Err(Ok(Error::InvalidProof)));
 }
@@ -539,8 +569,12 @@ fn test_recursive_proof_short_aggregated_vk_rejected() {
     let (rp, _) = make_recursive_proof_struct(&env, &base_id, &vk, 1);
     let composer = Address::generate(&env);
     let r = client.try_create_recursive_proof(
-        &composer, &base_id, &rp.recursive_proof,
-        &Bytes::from_slice(&env, b"tooshort"), &1, &5_000,
+        &composer,
+        &base_id,
+        &rp.recursive_proof,
+        &Bytes::from_slice(&env, b"tooshort"),
+        &1,
+        &5_000,
     );
     assert_eq!(r, Err(Ok(Error::InvalidProof)));
 }
